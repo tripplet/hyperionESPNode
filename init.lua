@@ -1,13 +1,15 @@
 -- Configuration
 led_count = 150
 mdns_name = ""
---------------------
+wifi_name = "%%WIFI-NAME%%"
+wifi_password = "%%WIFI-PASSWORD%%"
+----------------------------------------------------------------------------------------------------
 
 led_buffer = ws2812.newBuffer(led_count, 3)
 
 wifi.setmode(wifi.STATION)
 wifi.setphymode(wifi.PHYMODE_G)
---wifi.sta.config("%%WIFI-NAME%%", "%%PASWORD%%", 0)
+wifi.sta.config(wifi_name, wifi_password, 0)
 
 wifi.sta.eventMonReg(wifi.STA_GOTIP, function()
     ip = wifi.sta.getip()
