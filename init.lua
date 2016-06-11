@@ -47,6 +47,11 @@ function set_color(red, green, blue)
     end)
 end
 
+if srv ~= nil then
+    print("stopping old server")
+    srv:close()
+end
+
 srv=net.createServer(net.TCP, 120)
 srv:listen(19444, function(conn)
     conn:on("receive", function(conn,payload)
