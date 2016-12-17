@@ -1,8 +1,15 @@
 led_buffer = ws2812.newBuffer(led_count, 3)
 
-wifi.setmode(wifi.STATION)
-wifi.setphymode(wifi.PHYMODE_G)
-wifi.sta.config(wifi_name, wifi_password, 0)
+
+if wifi_name == "" or mdns_name == nil or 
+   wifi_password == "" or mdns_name == nil then
+    print('No wifi configuration -> Exit')
+    return
+else
+    wifi.setmode(wifi.STATION)
+    wifi.setphymode(wifi.PHYMODE_G)
+    wifi.sta.config(wifi_name, wifi_password, 0)
+end
 
 wifi.sta.eventMonReg(wifi.STA_GOTIP, function()
     ip = wifi.sta.getip()
@@ -78,7 +85,6 @@ srv:listen(19444, function(conn)
 
             if data.duration and data.duration ~= 0 then
                 duration = data.duration
-                print(data.duration)
             end
 
             tmr.alarm(0, duration, tmr.ALARM_SINGLE, function()
