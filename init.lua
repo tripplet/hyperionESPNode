@@ -1,23 +1,30 @@
-print("Booting\r\n2s delay to allow for abort")
+print('Booting\r\n3s delay to allow for abort')
 
-tmr.alarm(3, 2000, tmr.ALARM_SINGLE, function()
-    print("Booting...")
-    if file.open("config.lua") then
+local load = function(filename, message)
+    if file.open(filename .. '.lua') then
         file.close()
-        print("Loading config file")
-        dofile("config.lua")
-    else
-        print("No config file found")
-        return
+        print('Compiling: ', filename)
+        node.compile(filename .. '.lua')
+        file.remove(filename .. '.lua')
+        collectgarbage()
     end
+    
+    if file.open(filename .. '.lc') then
+        file.close()
+        print('Loading: ', filename)
+        dofile(filename .. '.lc')
+        return true
+    else
+        print('Failed to load: ', filename)
+        return false
+    end
+end
 
-    if file.open("server.lua") then
-        file.close()
-        print("Starting hyperion server")
-        dofile("server.lua")
-    else
-        print("Server script not found")
-        return
-    end
-    print("Init done")
+tmr.alarm(3, 3000, tmr.ALARM_SINGLE, function()
+    print('Booting...')
+    if not load('config') then return end
+    if not load('server') then return end
+    
+    print('Init successful')
+    collectgarbage()
 end)
