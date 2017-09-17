@@ -8,22 +8,18 @@ if wifi_name == "" or mdns_name == nil or
 else
     wifi.setmode(wifi.STATION)
     wifi.setphymode(wifi.PHYMODE_G)
-    wifi.sta.config(wifi_name, wifi_password, 0)
+    wifi.sta.config({ ssid = wifi_name, pwd = wifi_password, auto = true })    
 end
 
-wifi.sta.eventMonReg(wifi.STA_GOTIP, function()
-    ip = wifi.sta.getip()
-    print('IP: ' .. ip)
-
-    if not (mdns_name == "" or mdns_name == nil) then
-        mdns.register(mdns_name, {hardware='NodeMCU'})
-        mdns.register(mdns_name, {hardware='NodeMCU'})
-    end
-
-    wifi.sta.eventMonStop("unreg all")
+wifi.eventmon.register(wifi.eventmon.STA_CONNECTED, function(event)
+    print("Connected to SSID: " .. event.SSID .. ", BSSID: " .. event.BSSID .. ", Channel: " .. event.channel)
 end)
 
-wifi.sta.eventMonStart()
+wifi.eventmon.register(wifi.eventmon.STA_GOT_IP, function(event)
+    print("IP: " .. event.IP)
+    mdns.register(mdns_name, {hardware='NodeMCU'})
+end)
+
 wifi.sta.connect()
 
 serverinfo = "{\"info\":{\"effects\":[],\"hostname\":\"test\",\"priorities\":[],"
@@ -67,11 +63,9 @@ set_color(0, 0, 0)
 srv=net.createServer(net.TCP, 120)
 srv:listen(19444, function(conn)
     conn:on("receive", function(conn, payload)
-        local ok, data = pcall(function () return cjson.decode(payload) end)
-        if not ok then
-            conn:send("{\"success\":true}\r\n")
-            return
-        end
+        decoder = sjson.decoder()
+        decoder:write(payload)
+        data = decoder:result()
 
         if data.command == "status" then
             local wifi_config = wifi.sta.getconfig(true)
