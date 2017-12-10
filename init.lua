@@ -8,7 +8,7 @@ local load = function(filename, message)
         file.remove(filename .. '.lua')
         collectgarbage()
     end
-    
+
     if file.open(filename .. '.lc') then
         file.close()
         print('Loading: ', filename)
@@ -20,11 +20,14 @@ local load = function(filename, message)
     end
 end
 
-tmr.alarm(3, 3000, tmr.ALARM_SINGLE, function()
+tmr.create():alarm(3000, tmr.ALARM_SINGLE, function()
     print('Booting...')
     if not load('config') then return end
+    if not load('led') then return end
+    if not load('mqtt') then return end
     if not load('server') then return end
-    
+
     print('Init successful')
+    set_color(0, 0, 0)
     collectgarbage()
 end)
