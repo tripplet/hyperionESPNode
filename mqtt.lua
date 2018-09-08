@@ -1,4 +1,6 @@
-mqtt_client = mqtt.Client("eps_licht", 60)
+local mqtt_timeout_retry = 2
+
+local mqtt_client = mqtt.Client("eps_licht", 60, mqtt_user, mqtt_password)
 mqtt_client:lwt(mqtt_topic .. "/status", "0" , 1, 1)
 
 function ends_with(str, trailing)
@@ -17,19 +19,35 @@ mqtt_client:on("message", function(client, topic, payload)
             decoder:write(payload)
             local data = decoder:result()
 
-            if data.r and data.g and data.b then
-                set_color(data.r, data.g, data.b)
+            if data.state then
+
+                if data.state:lower() == "off" then
+                    dim_down_with_brightness()
+                    return
+
+                elseif data.state:lower() == "on" then
+                    if data.color and data.color.r and data.color.g and data.color.b then
+                        set_color_with_last_brightness(data.color.r, data.color.g, data.color.b)
+                    end
+
+                    if data.brightness then
+                        set_brightness(data.brightness)
+                    end
+
+                    if not data.color and not data.brightness then
+                        set_last_color_and_brightness()
+                    end
+
+                    local duration = 3600000 -- 1 hour max
+                    if data.duration and data.duration ~= 0 then
+                        duration = data.duration * 1000
+                    end
+
+                    tmr.create():alarm(duration, tmr.ALARM_SINGLE, function()
+                        dim_down()
+                    end)
+                end
             end
-
-            local duration = 3600000 -- 1 hour max
-
-            if data.duration and data.duration ~= 0 then
-                duration = data.duration * 1000
-            end
-
-           tmr.create():alarm(duration, tmr.ALARM_SINGLE, function()
-                dim_down()
-            end)
         end
     end) then
         print("error in mqtt payload")
@@ -37,9 +55,13 @@ mqtt_client:on("message", function(client, topic, payload)
 end)
 
 function handle_mqtt_error(client, reason)
-    --Try reconnect in 1 minute
-    print("Error connecting to mqtt server (retrying in 30s): " .. reason)
-    tmr.create():alarm(30 * 1000, tmr.ALARM_SINGLE, do_mqtt_connect)
+    --Try reconnect
+    if mqtt_timeout_retry < 32 then
+        mqtt_timeout_retry = mqtt_timeout_retry * 2
+    end
+
+    print("Error connecting to mqtt server (retrying in "..mqtt_timeout_retry.."s): " .. reason)
+    tmr.create():alarm(mqtt_timeout_retry * 1000, tmr.ALARM_SINGLE, do_mqtt_connect)
 end
 
 function do_mqtt_connect()
@@ -48,8 +70,11 @@ function do_mqtt_connect()
     end
 
     print("Connecting to mqtt server")
-    mqtt_client:connect(mqtt_server, 1883, 0, function(client)
+
+    mqtt_client:connect(mqtt_server, mqtt_port, 0, 0, 
+    function(client)
         print("Connected to mqtt server")
+        mqtt_timeout_retry = 1
         client:subscribe(mqtt_topic .. "/rgb/set", 0, function(client) print("subscribe success") end)
         client:publish(mqtt_topic .. "/status", "1", 0, 1)
     end,

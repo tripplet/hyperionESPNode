@@ -1,4 +1,4 @@
-print('Booting\r\n3s delay to allow for abort')
+print('Booting\r\n3s delay to allow for abort, send "abort_boot=true" to stop')
 
 local load = function(filename, message)
     if file.open(filename .. '.lua') then
@@ -21,6 +21,8 @@ local load = function(filename, message)
 end
 
 tmr.create():alarm(3000, tmr.ALARM_SINGLE, function()
+    if abort_boot then return end
+    
     print('Booting...')
     if not load('config') then return end
     if not load('led') then return end
