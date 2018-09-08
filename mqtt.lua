@@ -1,6 +1,6 @@
 local mqtt_timeout_retry = 2
 
-local mqtt_client = mqtt.Client("eps_licht", 60, mqtt_user, mqtt_password)
+local mqtt_client = mqtt.Client("esp_licht", 60, mqtt_user, mqtt_password)
 mqtt_client:lwt(mqtt_topic .. "/status", "0" , 1, 1)
 
 function ends_with(str, trailing)
@@ -22,23 +22,23 @@ mqtt_client:on("message", function(client, topic, payload)
             if data.state then
 
                 if data.state:lower() == "off" then
-                    dim_down_with_brightness()
+                    set_color_off()
                     return
 
                 elseif data.state:lower() == "on" then
                     if data.color and data.color.r and data.color.g and data.color.b then
-                        set_color_with_last_brightness(data.color.r, data.color.g, data.color.b)
+                        set_color(data.color.r, data.color.g, data.color.b, nil)
                     end
 
                     if data.brightness then
-                        set_brightness(data.brightness)
+                        set_color(nil, nil, nil, data.brightness)
                     end
 
                     if not data.color and not data.brightness then
-                        set_last_color_and_brightness()
+                        set_last_color()
                     end
 
-                    local duration = 3600000 -- 1 hour max
+                    local duration = 6870947 -- 1h 54m max
                     if data.duration and data.duration ~= 0 then
                         duration = data.duration * 1000
                     end
@@ -64,19 +64,33 @@ function handle_mqtt_error(client, reason)
     tmr.create():alarm(mqtt_timeout_retry * 1000, tmr.ALARM_SINGLE, do_mqtt_connect)
 end
 
+function update_mqtt()
+    local ip, _ = wifi.sta.getip()
+
+    mqtt_client:publish(mqtt_topic .. "/status", "1", 0, 1)
+    mqtt_client:publish(mqtt_topic .. "/uptime", tostring(tmr.time()), 0, 1)
+    mqtt_client:publish(mqtt_topic .. "/freeheap", tostring(node.heap()), 0, 1)
+    mqtt_client:publish(mqtt_topic .. "/rssi", tostring(wifi.sta.getrssi()), 0, 1)
+    mqtt_client:publish(mqtt_topic .. "/ip", tostring(ip), 0, 1)
+
+    tmr.create():alarm(60 * 1000, tmr.ALARM_SINGLE, update_mqtt)
+end
+
 function do_mqtt_connect()
     if mqtt_server == "" then
+        mqtt_client = nil
         return
     end
 
     print("Connecting to mqtt server")
 
-    mqtt_client:connect(mqtt_server, mqtt_port, 0, 0, 
+    mqtt_client:connect(mqtt_server, mqtt_port, 0, 0,
     function(client)
         print("Connected to mqtt server")
         mqtt_timeout_retry = 1
         client:subscribe(mqtt_topic .. "/rgb/set", 0, function(client) print("subscribe success") end)
-        client:publish(mqtt_topic .. "/status", "1", 0, 1)
+
+        update_mqtt()
     end,
     function(client, reason)
         handle_mqtt_error(client, reason)

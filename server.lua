@@ -80,10 +80,10 @@ http_srv:listen(19444, function(conn)
             local green = math.floor(data.color[2] * 0.39215)
             local blue  = math.floor(data.color[3] * 0.39215)
 
-            set_color(red, green, blue)
+            set_color(red, green, blue, 255)
             conn:send("{\"success\":true}\r\n")
 
-            local duration = 3600000 -- 1 hour max
+            local duration = 6870947 -- 1h 54m max
 
             if data.duration and data.duration ~= 0 then
                 duration = data.duration

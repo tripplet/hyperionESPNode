@@ -1,8 +1,7 @@
 local led_buffer = ws2812.newBuffer(led_count, 3)
 
-local last_color = { r = 0, g = 0, b = 0 }
-current_color = { r = 0, g = 0, b = 0 }
-local last_brightness = 128
+local last_color = { red = 0, green = 0, blue = 0, brightness = 255 }
+current_color = { red = 0, green = 0, blue = 0, brightness = 255 }
 
 function disable_led()
     tmr.create():alarm(500, tmr.ALARM_SINGLE, function()
@@ -12,107 +11,71 @@ function disable_led()
     end)
 end
 
-function set_color(red, green, blue)
+function set_color_off()
+    ws2812.init()
+    led_buffer:fill(0, 0, 0)
+    ws2812.write(led_buffer)
+    disable_led()
+
+    current_color = { red = 0, green = 0, blue = 0, brightness = 255 }
+end
+
+function set_color(red, green, blue, brightness)
     tmr.create():alarm(1, tmr.ALARM_SINGLE, function()
+        if red == nil then red = last_color.red end
+        if green == nil then green = last_color.green end
+        if blue == nil then blue = last_color.blue end
+
+        if brightness == nil then
+            brightness = last_color.brightness
+        end
+
+        local factor = brightness / 255.0
+
         ws2812.init()
-        led_buffer:fill(green, red, blue)
+        led_buffer:fill(green * factor, red * factor, blue * factor)
         ws2812.write(led_buffer)
-        current_color = { r = red, g = green, b = blue }
-        last_color = { r = red, g = green, b = blue }
         disable_led()
+
+        current_color = { red = red, green = green, blue = blue, brightness = brightness }
+        last_color = { red = red, green = green, blue = blue, brightness = brightness }
     end)
 end
 
-
-function set_brightness(brightness)
+function set_last_color()
     tmr.create():alarm(1, tmr.ALARM_SINGLE, function()
-        
-        last_brightness = brightness
-        local red = last_color.r * (brightness / 255.0)
-        local green = last_color.g * (brightness / 255.0)
-        local blue = last_color.b * (brightness / 255.0)
-        
+        local factor = last_color.brightness / 255.0
+
         ws2812.init()
-        led_buffer:fill(green, red, blue)        
+        led_buffer:fill(last_color.green * factor, last_color.red * factor, last_color.blue * factor)
         ws2812.write(led_buffer)
         disable_led()
-    end)
-end
 
-
-function set_color_with_last_brightness(red, green, blue)
-    tmr.create():alarm(1, tmr.ALARM_SINGLE, function()
-        ws2812.init()
-
-        local b_red = red * (last_brightness / 255.0)
-        local b_green = green * (last_brightness / 255.0)
-        local b_blue = blue * (last_brightness / 255.0)
-        
-        led_buffer:fill(b_green, b_red, b_blue)
-        ws2812.write(led_buffer)
-        current_color = { r = red, g = green, b = blue }
-        last_color = { r = red, g = green, b = blue }
-        disable_led()
-    end)
-end
-
-function set_last_color_and_brightness()
-    tmr.create():alarm(1, tmr.ALARM_SINGLE, function()
-        ws2812.init()
-        led_buffer:fill(last_color.g, last_color.r, last_color.b)
-        ws2812.write(led_buffer)
-        disable_led()
-    end)
-end
-
-function dim_down_with_brightness()
-    tmr.create():alarm(30, tmr.ALARM_SINGLE, function()
-        if current_color.r > 0 then
-            current_color.r = current_color.r - 1
-        end
-        if current_color.g > 0 then
-            current_color.g = current_color.g - 1
-        end
-        if current_color.b > 0 then
-            current_color.b = current_color.b - 1
-        end
-
-        if current_color.r > 0 or current_color.b > 0 or current_color.b > 0 then
-            ws2812.init()            
-            led_buffer:fill(current_color.g * (last_brightness / 255.0), 
-                            current_color.r * (last_brightness / 255.0),
-                            current_color.b * (last_brightness / 255.0))
-            ws2812.write(led_buffer)
-            dim_down_with_brightness()
-        else
-            led_buffer:fill(0, 0, 0)
-            ws2812.write(led_buffer)
-            disable_led()
-        end
+        current_color = last_color
     end)
 end
 
 function dim_down()
     tmr.create():alarm(30, tmr.ALARM_SINGLE, function()
-        if current_color.r > 0 then
-            current_color.r = current_color.r - 1
-        end
-        if current_color.g > 0 then
-            current_color.g = current_color.g - 1
-        end
-        if current_color.b > 0 then
-            current_color.b = current_color.b - 1
-        end
+        local factor = (current_color.brightness) / 255.0
 
-        if current_color.r > 0 or current_color.b > 0 or current_color.b > 0 then
+        local r = current_color.red * factor
+        local g = current_color.green * factor
+        local b = current_color.blue * factor
+
+        if current_color.brightness > 0 then
             ws2812.init()
-            led_buffer:fill(current_color.g, current_color.r, current_color.b)
+            led_buffer:fill(g, r, b)
             ws2812.write(led_buffer)
+
+            current_color.brightness = current_color.brightness - 1
             dim_down()
         else
             led_buffer:fill(0, 0, 0)
             ws2812.write(led_buffer)
             disable_led()
+
+            current_color = { red = 0, green = 0, blue = 0, brightness = 0 }
         end
     end)
 end

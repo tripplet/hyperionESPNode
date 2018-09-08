@@ -22,7 +22,7 @@ end
 
 tmr.create():alarm(3000, tmr.ALARM_SINGLE, function()
     if abort_boot then return end
-    
+
     print('Booting...')
     if not load('config') then return end
     if not load('led') then return end
@@ -30,6 +30,6 @@ tmr.create():alarm(3000, tmr.ALARM_SINGLE, function()
     if not load('server') then return end
 
     print('Init successful')
-    set_color(0, 0, 0)
+    set_color(0, 0, 0, 0)
     collectgarbage()
 end)
