@@ -19,7 +19,7 @@ end)
 
 wifi.sta.connect()
 
-serverinfo = "{\"info\":{\"effects\":[],\"hostname\":\"test\",\"priorities\":[],"
+local serverinfo = "{\"info\":{\"effects\":[],\"hostname\":\"test\",\"priorities\":[],"
 serverinfo = serverinfo .. "\"transform\":[{\"blacklevel\":[0.0,0.0,0.0],\"gamma\":[1.0,1.0,1.0],"
 serverinfo = serverinfo .. "\"id\":\"default\",\"saturationGain\":1.0,\"threshold\":[0.0,0.0,0.0],"
 serverinfo = serverinfo .. "\"valueGain\":1.0,\"whitelevel\":[1.0,1.0,1.0]}]},\"success\":true}\r\n"
@@ -61,9 +61,9 @@ http_srv:listen(19444, function(conn)
                 .. ',"ssid":"' .. wifi_config.ssid
                 .. '"},"filesystem":{"total":' .. tostring(total)
                 .. ',"used":' .. used
-                .. '},"color":{"red":' .. tostring(current_color.r)
-                .. ',"green":' .. tostring(current_color.g)
-                .. ',"blue":' .. tostring(current_color.b) .. '}}'
+                .. '},"color":{"red":' .. tostring(current_color.red)
+                .. ',"green":' .. tostring(current_color.green)
+                .. ',"blue":' .. tostring(current_color.blue) .. '}}'
             conn:send(status)
 
         elseif data.command == "serverinfo" then
@@ -71,7 +71,7 @@ http_srv:listen(19444, function(conn)
 
         elseif data.command == "clearall" or
                data.command == "clear" then
-            set_color(0, 0, 0)
+            set_color_off()
             conn:send("{\"success\":true}\r\n")
 
         elseif data.command == "color" then

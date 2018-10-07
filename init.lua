@@ -30,6 +30,6 @@ tmr.create():alarm(3000, tmr.ALARM_SINGLE, function()
     if not load('server') then return end
 
     print('Init successful')
-    set_color(0, 0, 0, 0)
+    set_color_off()
     collectgarbage()
 end)

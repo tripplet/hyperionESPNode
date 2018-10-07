@@ -1,6 +1,6 @@
 local led_buffer = ws2812.newBuffer(led_count, 3)
 
-local last_color = { red = 0, green = 0, blue = 0, brightness = 255 }
+local last_color = { red = 255, green = 255, blue = 255, brightness = 80 }
 current_color = { red = 0, green = 0, blue = 0, brightness = 255 }
 
 function disable_led()
@@ -18,6 +18,7 @@ function set_color_off()
     disable_led()
 
     current_color = { red = 0, green = 0, blue = 0, brightness = 255 }
+    update_mqtt_color(current_color)
 end
 
 function set_color(red, green, blue, brightness)
@@ -39,19 +40,7 @@ function set_color(red, green, blue, brightness)
 
         current_color = { red = red, green = green, blue = blue, brightness = brightness }
         last_color = { red = red, green = green, blue = blue, brightness = brightness }
-    end)
-end
-
-function set_last_color()
-    tmr.create():alarm(1, tmr.ALARM_SINGLE, function()
-        local factor = last_color.brightness / 255.0
-
-        ws2812.init()
-        led_buffer:fill(last_color.green * factor, last_color.red * factor, last_color.blue * factor)
-        ws2812.write(led_buffer)
-        disable_led()
-
-        current_color = last_color
+        update_mqtt_color(current_color)
     end)
 end
 
@@ -76,6 +65,7 @@ function dim_down()
             disable_led()
 
             current_color = { red = 0, green = 0, blue = 0, brightness = 0 }
+            update_mqtt_color(current_color)
         end
     end)
 end
